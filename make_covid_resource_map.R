@@ -37,10 +37,3 @@ tm_basemap('CartoDB.Positron') +
           labels = c("Rec Center"),
           palette = c("#ffffb3"),
           popup.vars = c("Group", "Location"))
-
-
-tm_basemap('CartoDB.Positron') +
-  tm_shape(t1, name = "Tier 1") +
-  tm_symbols(col = "Group",
-             title.col = "T1",
-             palette = c("#8dd3c7", "#bc80bd"))
