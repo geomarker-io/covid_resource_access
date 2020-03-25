@@ -36,4 +36,5 @@ tm_basemap('CartoDB.Positron') +
           alpha = 0.7,
           labels = c("Rec Center"),
           palette = c("#ffffb3"),
-          popup.vars = c("Group", "Location"))
+          popup.vars = c("Group", "Location")) +
+  tm_scale_bar()
