@@ -1,0 +1,139 @@
+---
+title: "COVID-19 Resource Map"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: bootstrap
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+Column {data-width=250}
+-----------------------------------------------------------------------
+
+<font size="3">
+
+This map displays current and potential future sites providing meals and other resources to Cincinnati families overlaid on Cincinnati neighborhood boundaries, shaded by community deprivation.
+
+Using the menu on the left-hand side of the map, you can toggle sites on/off by Tier.
+
+* Tier 1: Currently open and active
+* Tier 2: Currently open but not active
+* Tier 3: Not currently open, but potentially could be
+
+You can also toggle on/off 1-mile buffers around the sites.
+
+Clicking on a site displays the address, days and times of operation, and ages of children served.
+
+Clicking in a neighborhood displays the [deprivation index](https://geomarker.io/dep_index/) value and the population under age 18 in that neighborhood.
+
+</font>
+
+<br>
+
+<br>
+
+<br>
+
+<font size="2">
+
+Map created by CCHMC GRAPPH.
+
+For questions, contact erika.rasnick@cchmc.org
+
+</font>
+
+Column {data-width=750}
+-----------------------------------------------------------------------
+
+```{r, fig.width = 13.5, fig.height = 10, fig.align='center'}
+library(tidyverse)
+library(sf)
+library(tmap)
+
+d <- readxl::read_excel('COVID_Mapping_Geocode.xlsx') %>%
+  st_as_sf(coords = c('long', 'lat'), crs = 4326)
+
+t1 <- d %>% filter(Tier == "Tier1")
+t2 <- d %>% filter(Tier == "Tier2")
+t3 <- d %>% filter(Tier == "Tier3")
+
+t1_buffer <- d %>% filter(Tier == "Tier1") %>% 
+  st_transform(5072) %>% 
+  st_buffer(dist = 1609.34, nQuadSegs = 1000)
+t2_buffer <- d %>% filter(Tier == "Tier2") %>% 
+  st_transform(5072) %>% 
+  st_buffer(dist = 1609.34, nQuadSegs = 1000)
+t3_buffer <- d %>% filter(Tier == "Tier3") %>% 
+  st_transform(5072) %>% 
+  st_buffer(dist = 1609.34, nQuadSegs = 1000)
+
+neighborhood_dep <- readRDS('ham_neighborhoods_dep_index_shp.rds') %>% 
+  select(neighborhood, pop_under_18, dep_index)
+
+tmap_mode("view")
+
+tm <- tm_basemap('CartoDB.Positron') +
+  tm_shape(neighborhood_dep, name = "Neighborhood Deprivation Index") +
+  tm_polygons(col = "dep_index", 
+              title = "Deprivation Index",
+              alpha = 0.4,
+              palette = "Greys",
+              popup.vars = c("neighborhood", "dep_index", "pop_under_18")) +
+  tm_shape(t1_buffer, name = "Tier 1 1-mile buffer") +
+  tm_polygons(col = "Group",
+              legend.show = FALSE,
+          alpha = 0.4,
+          palette = c("#8dd3c7", "#bc80bd"),
+          popup.vars = NULL) +
+  tm_shape(t2_buffer, name = "Tier 2 1-mile buffer") +
+  tm_polygons(col = "Group",
+              legend.show = FALSE,
+          alpha = 0.4,
+          palette = c("#fb8072", "#80b1d3",
+                      "#fdb462", "#b3de69"),
+          popup.vars = NULL) +
+  tm_shape(t3_buffer, name = "Tier 3 1-mile buffer") +
+  tm_polygons(col = "Group",
+              legend.show = FALSE,
+          alpha = 0.4,
+          palette =  c("#ffffb3"),
+          popup.vars = NULL) +
+  tm_shape(t1, name = "Tier 1") +
+  tm_dots(col = "Group",
+          title = "Tier 1",
+          size = 0.07,
+          alpha = 0.7,
+          palette = c("#8dd3c7", "#bc80bd"),
+          popup.vars = c("Group", "Location", "Days", "Times", "Ages")) +
+  tm_shape(t2, name = "Tier 2") +
+  tm_dots(col = "Group",
+             title = "Tier 2",
+          size = 0.07,
+          alpha = 0.7,
+          labels = c("Fire Station", "Kroger",
+                     "Non Profit", "Public Health"),
+          palette = c("#fb8072", "#80b1d3",
+                      "#fdb462", "#b3de69"),
+          popup.vars = c("Group", "Location")) +
+  tm_shape(t3, name = "Tier 3") +
+  tm_dots(col = "Group",
+             title = "Tier 3",
+          size = 0.07,
+          alpha = 0.7,
+          labels = c("Rec Center"),
+          palette = c("#ffffb3"),
+          popup.vars = c("Group", "Location")) +
+  tm_scale_bar()
+
+tm %>%
+  tmap_leaflet() %>% 
+  leaflet::hideGroup("Tier 1 1-mile buffer") %>% 
+  leaflet::hideGroup("Tier 2 1-mile buffer") %>% 
+  leaflet::hideGroup("Tier 3 1-mile buffer")
+```
+
+
